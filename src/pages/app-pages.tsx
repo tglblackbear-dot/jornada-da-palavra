@@ -7,7 +7,7 @@ import { useAsync } from '../hooks/useAsync'
 import { currentStreak, reachedMilestones } from '../lib/domain'
 import { profileSchema, toFieldErrors, type FieldErrors } from '../lib/validation'
 import { requireSupabase } from '../lib/supabase'
-import { avatarUrl, dashboardSummary, listFrom, publishedQuestions, completeStudy, removeAvatar, updateProfile, uploadAvatar, type Question } from '../services/data'
+import { avatarUrl, dailyWord, dashboardSummary, listFrom, publishedQuestions, completeStudy, removeAvatar, updateProfile, uploadAvatar, type Question } from '../services/data'
 
 function PageHeader({ eyebrow, title, description }: { eyebrow: string; title: string; description: string }) {
   return (
@@ -30,19 +30,44 @@ function LoadState({ loading, error, reload, emptyTitle, emptyText, children, is
 
 export function DashboardPage() {
   const { user, profile } = useAuth()
+  const { notify } = useToast()
   const summary = useAsync(() => dashboardSummary(user!.id), [user?.id])
+  const word = useAsync(() => dailyWord(), [])
   const first = profile?.display_name?.split(' ')[0] ?? 'irmão'
+
+  async function shareWord() {
+    const w = word.data
+    if (!w) return
+    const text = `Palavra do Dia — ${w.reference}\n\n${w.reflection}\n\nJornada da Palavra`
+    try {
+      if (navigator.share) await navigator.share({ title: 'Palavra do Dia', text })
+      else { await navigator.clipboard.writeText(text); notify('Texto copiado para compartilhar.', 'success') }
+    } catch { /* compartilhamento cancelado pelo usuário */ }
+  }
 
   return (
     <>
       <PageHeader eyebrow="Minha Jornada" title={`Bom dia, ${first}.`} description="Um passo de cada vez na Palavra." />
       <Card className="mb-6 border-gold-500/30 bg-gradient-to-br from-white to-gold-100/40">
-        <p className="text-xs font-bold uppercase tracking-widest text-gold-600">Palavra do Dia</p>
-        <h2 className="mt-2 text-lg font-semibold text-brand-950">Aguardando revisão humana</h2>
-        <p className="mt-2 text-sm text-slate-600">
-          Nenhum texto bíblico é publicado automaticamente. A Palavra do Dia aparecerá aqui somente
-          após aprovação de um revisor autorizado.
-        </p>
+        <div className="flex items-start justify-between gap-3">
+          <p className="text-xs font-bold uppercase tracking-widest text-gold-600">Palavra do Dia</p>
+          {word.data && <button onClick={() => void shareWord()} className="rounded-lg px-2 py-1 text-xs font-semibold text-brand-900 underline">Compartilhar</button>}
+        </div>
+        {word.loading ? <Skeleton className="mt-3 h-24" /> : word.error ? (
+          <div className="mt-3"><Alert tone="error">Não foi possível carregar a Palavra do Dia.</Alert><Button variant="secondary" className="mt-2" onClick={word.reload}>Tentar novamente</Button></div>
+        ) : word.data ? (
+          <>
+            <h2 className="mt-2 text-lg font-semibold text-brand-950">{word.data.reference}</h2>
+            <p className="mt-2 text-sm leading-relaxed text-slate-700">{word.data.reflection}</p>
+            {word.data.context && <p className="mt-3 text-xs italic text-slate-500">{word.data.context}</p>}
+            <p className="mt-3 text-[11px] text-slate-400">Reflexão original — leia o texto bíblico na sua tradução.</p>
+          </>
+        ) : (
+          <>
+            <h2 className="mt-2 text-lg font-semibold text-brand-950">Aguardando revisão humana</h2>
+            <p className="mt-2 text-sm text-slate-600">Nenhum texto bíblico é publicado automaticamente.</p>
+          </>
+        )}
       </Card>
       <div className="mb-6">
         <Link to="/estudar"><Button className="w-full sm:w-auto">Estudar Agora</Button></Link>

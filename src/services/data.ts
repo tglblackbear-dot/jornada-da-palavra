@@ -1,4 +1,5 @@
 import { requireSupabase } from '../lib/supabase'
+import { localDate } from '../lib/domain'
 
 export interface Profile {
   id: string
@@ -92,6 +93,26 @@ export async function publishedQuestions(limit = 10): Promise<Question[]> {
     .limit(limit)
   if (error) throw error
   return (data ?? []) as Question[]
+}
+
+export interface DailyWord {
+  day: string
+  reference: string
+  reflection: string
+  context: string | null
+}
+
+export async function dailyWord(): Promise<DailyWord | null> {
+  const { data, error } = await requireSupabase()
+    .from('daily_word')
+    .select('day,reference,reflection,context')
+    .eq('status', 'PUBLISHED')
+    .lte('day', localDate(new Date()))
+    .order('day', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+  if (error) throw error
+  return data as DailyWord | null
 }
 
 export async function dashboardSummary(userId: string) {
