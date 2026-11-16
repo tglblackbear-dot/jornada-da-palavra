@@ -71,7 +71,7 @@ export function DashboardPage() {
         )}
       </Card>
       <div className="mb-6">
-        <Button onClick={() => navigate('/estudar')} className="w-full sm:w-auto">Estudar Agora</Button>
+        <Button onClick={() => { window.location.assign(`${import.meta.env.BASE_URL}estudar`) }} className="w-full sm:w-auto">Estudar Agora</Button>
       </div>
       <SectionHeading eyebrow="Resumo" title="Seu progresso" />
       <LoadState loading={summary.loading} error={summary.error} reload={summary.reload}
