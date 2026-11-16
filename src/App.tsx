@@ -4,7 +4,11 @@ import { ProtectedRoute, PublicRoute, RoleGuard } from './components/guards'
 import { LandingPage } from './pages/public'
 import { LoginPage, RecoverPage, RegisterPage, ResetPasswordPage } from './pages/auth-pages'
 import { CommunityPage, DashboardPage, EventCheckInPage, EventsPage, JourneyPage, MilestonesPage, NotebookPage, ProfilePage, StudyPage } from './pages/app-pages'
-import { AdminAudit, AdminDashboard, AdminEvents, AdminGroups, AdminLayout, AdminQuestions, AdminReports, AdminUsers } from './pages/admin'
+import {
+  AdminAudit, AdminCategories, AdminCycles, AdminDashboard, AdminDailyWord, AdminEventsPage,
+  AdminGroups, AdminLayout, AdminQuestions, AdminReports, AdminTracks, AdminUsers,
+} from './pages/admin'
+import { LegalPage, NotificationsPage } from './pages/extra'
 import { EmptyState } from './components/ui'
 
 function NotFound() {
@@ -16,6 +20,8 @@ export default function App() {
     <BrowserRouter basename={import.meta.env.BASE_URL}>
       <Routes>
         <Route path="/" element={<LandingPage />} />
+        <Route path="/privacidade" element={<LegalPage kind="privacidade" />} />
+        <Route path="/termos" element={<LegalPage kind="termos" />} />
 
         <Route element={<PublicRoute />}>
           <Route path="/login" element={<LoginPage />} />
@@ -35,6 +41,7 @@ export default function App() {
             <Route path="/caderno-de-estudo" element={<NotebookPage />} />
             <Route path="/eventos" element={<EventsPage />} />
             <Route path="/evento/:codigo" element={<EventCheckInPage />} />
+            <Route path="/notificacoes" element={<NotificationsPage />} />
 
             <Route element={<RoleGuard allow={['ADMIN', 'SUPER_ADMIN']} />}>
               <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
@@ -42,14 +49,14 @@ export default function App() {
                 <Route path="dashboard" element={<AdminDashboard />} />
                 <Route path="usuarios" element={<AdminUsers />} />
                 <Route path="perguntas" element={<AdminQuestions />} />
-                <Route path="categorias" element={<AdminQuestions />} />
-                <Route path="trilhas" element={<AdminQuestions />} />
-                <Route path="ciclos" element={<AdminEvents />} />
+                <Route path="categorias" element={<AdminCategories />} />
+                <Route path="trilhas" element={<AdminTracks />} />
+                <Route path="ciclos" element={<AdminCycles />} />
                 <Route path="grupos" element={<AdminGroups />} />
-                <Route path="eventos" element={<AdminEvents />} />
+                <Route path="eventos" element={<AdminEventsPage />} />
+                <Route path="palavra" element={<AdminDailyWord />} />
                 <Route path="relatorios" element={<AdminReports />} />
                 <Route path="auditoria" element={<AdminAudit />} />
-                <Route path="configuracoes" element={<AdminReports />} />
               </Route>
             </Route>
           </Route>

@@ -8,6 +8,7 @@ test('landing apresenta a identidade da plataforma', async ({ page }) => {
 
 test('rota protegida redireciona para login (ou exige configuração)', async ({ page }) => {
   await page.goto('/jornada')
+  await page.waitForTimeout(1500)
   if (page.url().includes('/login')) {
     await expect(page.getByRole('heading', { name: 'Entrar' })).toBeVisible()
   } else {

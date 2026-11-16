@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from 'react'
+import { useEffect, useState, type FormEvent, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Alert, Badge, Button, Card, EmptyState, Modal, ProgressBar, SectionHeading, Skeleton, StatCard, TextField, TextArea } from '../components/ui'
 import { useAuth } from '../contexts/AuthContext'
@@ -7,14 +7,22 @@ import { useAsync } from '../hooks/useAsync'
 import { currentStreak, reachedMilestones } from '../lib/domain'
 import { profileSchema, toFieldErrors, type FieldErrors } from '../lib/validation'
 import { requireSupabase } from '../lib/supabase'
-import { avatarUrl, dailyWord, dashboardSummary, listFrom, publishedQuestions, completeStudy, removeAvatar, updateProfile, uploadAvatar, type Question } from '../services/data'
+import {
+  avatarUrl, dailyWord, dashboardSummary, listFrom, completeStudy, removeAvatar, updateProfile, uploadAvatar,
+  communityHighlights, categories, tracks, questionsByTrack, publishedQuestionsFiltered, reviewQuestions,
+  myMemberships, joinGroup, leaveGroup, joinCycle, createEventCode, exportMyData,
+  adminSaveEvent, eventCheckins, type Question,
+} from '../services/data'
 
-function PageHeader({ eyebrow, title, description }: { eyebrow: string; title: string; description: string }) {
+function PageHeader({ eyebrow, title, description, action }: { eyebrow: string; title: string; description: string; action?: ReactNode }) {
   return (
-    <header className="mb-6">
-      <p className="text-xs font-bold uppercase tracking-widest text-gold-600">{eyebrow}</p>
-      <h1 className="mt-1 text-2xl font-bold text-brand-950 sm:text-3xl">{title}</h1>
-      <p className="mt-2 text-sm text-slate-600">{description}</p>
+    <header className="mb-6 flex flex-wrap items-end justify-between gap-3">
+      <div>
+        <p className="text-xs font-bold uppercase tracking-widest text-gold-600">{eyebrow}</p>
+        <h1 className="mt-1 text-2xl font-bold text-brand-950 sm:text-3xl">{title}</h1>
+        <p className="mt-2 text-sm text-slate-600">{description}</p>
+      </div>
+      {action}
     </header>
   )
 }
@@ -33,6 +41,7 @@ export function DashboardPage() {
   const { notify } = useToast()
   const summary = useAsync(() => dashboardSummary(user!.id), [user?.id])
   const word = useAsync(() => dailyWord(), [])
+  const highlights = useAsync(() => communityHighlights(), [])
   const first = profile?.display_name?.split(' ')[0] ?? 'irmão'
 
   async function shareWord() {
@@ -84,7 +93,16 @@ export function DashboardPage() {
       </LoadState>
       <div className="mt-8">
         <SectionHeading eyebrow="Comunhão" title="Destaques da Comunidade" />
-        <EmptyState title="Em breve" description="Os destaques respeitam a privacidade de cada participante e serão exibidos após configuração pelo administrador." />
+        {highlights.loading ? <Skeleton className="h-24" /> : !highlights.data?.length ? (
+          <EmptyState title="Sem destaques públicos" description="Participantes que tornarem o perfil público e estudarem com constância aparecerão aqui." />
+        ) : (
+          <div className="grid gap-2 sm:grid-cols-2">
+            {highlights.data.map((h) => {
+              const item = h as { user_id: string; display_name: string; studies: number; points: number; active_days: number }
+              return <Card key={item.user_id} className="flex items-center justify-between"><span className="font-medium text-brand-950">{item.display_name}</span><Badge tone="olive">{item.studies} estudos</Badge></Card>
+            })}
+          </div>
+        )}
       </div>
     </>
   )
@@ -93,13 +111,27 @@ export function DashboardPage() {
 export function StudyPage() {
   const { user } = useAuth()
   const { notify } = useToast()
-  const questions = useAsync(() => publishedQuestions(10), [])
+  const [mode, setMode] = useState<'livre' | 'desafio' | 'revisao'>('livre')
+  const [categoryId, setCategoryId] = useState('')
+  const [difficulty, setDifficulty] = useState('')
+  const [trackId, setTrackId] = useState('')
+  const catList = useAsync(() => categories(), [])
+  const trackList = useAsync(() => tracks(), [])
+  const questions = useAsync(() => {
+    if (mode === 'revisao') return reviewQuestions()
+    if (mode === 'desafio' && trackId) return questionsByTrack(trackId)
+    return publishedQuestionsFiltered({ categoryId: categoryId || undefined, difficulty: difficulty || undefined, limit: 10 })
+  }, [mode, categoryId, difficulty, trackId])
   const [index, setIndex] = useState(0)
   const [selected, setSelected] = useState<string | null>(null)
   const [confirmed, setConfirmed] = useState(false)
   const [answers, setAnswers] = useState<{ question_id: string; option_id: string }[]>([])
   const [result, setResult] = useState<{ correct: number; wrong: number; points: number } | null>(null)
   const [busy, setBusy] = useState(false)
+
+  useEffect(() => {
+    setIndex(0); setSelected(null); setConfirmed(false); setAnswers([]); setResult(null)
+  }, [mode, categoryId, difficulty, trackId])
 
   const list = (questions.data ?? []) as Question[]
   const q = list[index]
@@ -132,6 +164,37 @@ export function StudyPage() {
   return (
     <>
       <PageHeader eyebrow="Estudo" title="Estudar a Palavra" description="Perguntas revisadas, com referência e explicação." />
+      <div className="mb-5 space-y-3">
+        <div className="flex flex-wrap gap-2" role="group" aria-label="Modalidade de estudo">
+          {([['livre', 'Estudo Livre'], ['desafio', 'Desafio Bíblico'], ['revisao', 'Revisão']] as const).map(([value, label]) => (
+            <button key={value} onClick={() => setMode(value)} className={`rounded-full px-4 py-2 text-sm font-semibold ${mode === value ? 'bg-brand-900 text-white' : 'bg-white text-slate-600 border border-slate-200'}`}>{label}</button>
+          ))}
+        </div>
+        {mode === 'livre' && (
+          <div className="grid gap-3 sm:grid-cols-2">
+            <label className="text-sm text-slate-600">Categoria
+              <select value={categoryId} onChange={(e) => setCategoryId(e.target.value)} className="mt-1 min-h-11 w-full rounded-xl border border-slate-200 bg-white px-3">
+                <option value="">Todas</option>
+                {(catList.data ?? []).map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+              </select>
+            </label>
+            <label className="text-sm text-slate-600">Dificuldade
+              <select value={difficulty} onChange={(e) => setDifficulty(e.target.value)} className="mt-1 min-h-11 w-full rounded-xl border border-slate-200 bg-white px-3">
+                <option value="">Todas</option><option value="facil">Fácil</option><option value="medio">Médio</option><option value="dificil">Difícil</option>
+              </select>
+            </label>
+          </div>
+        )}
+        {mode === 'desafio' && (
+          <label className="block text-sm text-slate-600">Trilha de estudo
+            <select value={trackId} onChange={(e) => setTrackId(e.target.value)} className="mt-1 min-h-11 w-full rounded-xl border border-slate-200 bg-white px-3">
+              <option value="">Selecione uma trilha</option>
+              {(trackList.data ?? []).map((t) => <option key={t.id} value={t.id}>{t.title}</option>)}
+            </select>
+          </label>
+        )}
+        {mode === 'revisao' && <Alert tone="info">Estas são questões marcadas para revisão espaçada. Ao concluir, o intervalo é recalculado no servidor.</Alert>}
+      </div>
       <LoadState loading={questions.loading} error={questions.error} reload={questions.reload}
         emptyTitle="Nenhuma pergunta publicada" emptyText="O conteúdo bíblico entra em revisão antes de ser publicado. Volte em breve ou peça a um administrador para revisar as questões.">
         {result ? (
@@ -221,18 +284,70 @@ export function JourneyPage() {
 
 export function CommunityPage() {
   const groups = useAsync(() => listFrom('groups'), [])
+  const cycles = useAsync(() => listFrom('cycles'), [])
+  const memberships = useAsync(() => myMemberships(), [])
+  const { notify } = useToast()
+  const [busy, setBusy] = useState<string | null>(null)
+
+  async function act(kind: 'group' | 'cycle', id: string, join: boolean) {
+    setBusy(id)
+    try {
+      if (kind === 'group') {
+        if (join) await joinGroup(id)
+        else await leaveGroup(id)
+      } else await joinCycle(id)
+      notify('Solicitação registrada.', 'success')
+      memberships.reload()
+    } catch (err) { notify(err instanceof Error ? err.message : 'Falha na operação.', 'error') }
+    finally { setBusy(null) }
+  }
+
+  const groupIds = memberships.data?.groups ?? []
+  const cycleIds = memberships.data?.cycles ?? []
+
   return (
     <>
       <PageHeader eyebrow="Comunhão" title="Comunidade" description="Grupos e ciclos de estudo." />
+      <SectionHeading eyebrow="Grupos" title="Participar" />
       <LoadState loading={groups.loading} error={groups.error} reload={groups.reload}
         emptyTitle="Nenhum grupo disponível" emptyText="Quando um administrador criar grupos, eles aparecerão aqui.">
         <div className="grid gap-3 sm:grid-cols-2">
           {(groups.data ?? []).map((g) => {
-            const item = g as { id: string; name: string; description: string | null; image_url: string | null }
-            return <Card key={item.id}><h3 className="font-semibold text-brand-950">{item.name}</h3><p className="mt-1 text-sm text-slate-600">{item.description ?? 'Sem descrição.'}</p></Card>
+            const item = g as { id: string; name: string; description: string | null }
+            const joined = groupIds.includes(item.id)
+            return (
+              <Card key={item.id}>
+                <h3 className="font-semibold text-brand-950">{item.name}</h3>
+                <p className="mt-1 text-sm text-slate-600">{item.description ?? 'Sem descrição.'}</p>
+                <Button variant={joined ? 'secondary' : 'primary'} className="mt-4" loading={busy === item.id}
+                  onClick={() => void act('group', item.id, !joined)}>{joined ? 'Sair do grupo' : 'Participar'}</Button>
+              </Card>
+            )
           })}
         </div>
       </LoadState>
+      <div className="mt-8">
+        <SectionHeading eyebrow="Ciclos" title="Ciclos de Estudo" />
+        <LoadState loading={cycles.loading} error={cycles.error} reload={cycles.reload}
+          emptyTitle="Nenhum ciclo ativo" emptyText="Ciclos aparecerão aqui quando forem criados pela administração.">
+          <div className="grid gap-3 sm:grid-cols-2">
+            {(cycles.data ?? []).map((c) => {
+              const item = c as { id: string; title: string; description: string | null; start_at: string; end_at: string; status: string }
+              const joined = cycleIds.includes(item.id)
+              return (
+                <Card key={item.id}>
+                  <Badge tone={item.status === 'ACTIVE' ? 'olive' : 'muted'}>{item.status}</Badge>
+                  <h3 className="mt-2 font-semibold text-brand-950">{item.title}</h3>
+                  <p className="text-sm text-slate-600">{item.description}</p>
+                  <p className="mt-2 text-xs text-slate-400">{new Date(item.start_at).toLocaleDateString('pt-BR')} — {new Date(item.end_at).toLocaleDateString('pt-BR')}</p>
+                  <Button variant={joined ? 'secondary' : 'primary'} className="mt-4" loading={busy === item.id}
+                    onClick={() => void act('cycle', item.id, true)}>{joined ? 'Inscrito' : 'Inscrever-se'}</Button>
+                </Card>
+              )
+            })}
+          </div>
+        </LoadState>
+      </div>
     </>
   )
 }
@@ -283,16 +398,80 @@ export function NotebookPage() {
 
 export function EventsPage() {
   const events = useAsync(() => listFrom('events'), [])
+  const { isAdmin } = useAuth()
+  const { notify } = useToast()
+  const [open, setOpen] = useState(false)
+  const [form, setForm] = useState({ title: '', description: '', starts_at: '', location: '' })
+  const [busy, setBusy] = useState(false)
+  const [qr, setQr] = useState<{ event: string; url: string } | null>(null)
+  const [checkins, setCheckins] = useState<{ event: string; rows: { name: string; at: string }[] } | null>(null)
+
+  async function save(e: FormEvent) {
+    e.preventDefault()
+    if (!form.title || !form.starts_at) return notify('Informe título e data.', 'error')
+    setBusy(true)
+    try {
+      await adminSaveEvent({ title: form.title, description: form.description, starts_at: new Date(form.starts_at).toISOString(), location: form.location, status: 'OPEN' })
+      notify('Evento salvo.', 'success'); setOpen(false); setForm({ title: '', description: '', starts_at: '', location: '' }); events.reload()
+    } catch (err) { notify(err instanceof Error ? err.message : 'Falha ao salvar.', 'error') }
+    finally { setBusy(false) }
+  }
+
+  async function generateQr(id: string, title: string) {
+    try {
+      const code = await createEventCode(id, 48)
+      const url = `${window.location.origin}/evento/${code}`
+      setQr({ event: title, url })
+      await navigator.clipboard.writeText(url)
+      notify('Link copiado.', 'success')
+    } catch (err) { notify(err instanceof Error ? err.message : 'Falha ao gerar QR.', 'error') }
+  }
+
+  async function loadCheckins(id: string, title: string) {
+    try { setCheckins({ event: title, rows: await eventCheckins(id) }) }
+    catch (err) { notify(err instanceof Error ? err.message : 'Falha.', 'error') }
+  }
+
   return (
     <>
-      <PageHeader eyebrow="Comunhão" title="Eventos" description="Inscrição e presença validadas no servidor." />
+      <PageHeader eyebrow="Comunhão" title="Eventos" description="Inscrição e presença validadas no servidor."
+        action={isAdmin ? <Button onClick={() => setOpen(true)}>Novo evento</Button> : undefined} />
       <LoadState loading={events.loading} error={events.error} reload={events.reload}
         emptyTitle="Nenhum evento agendado" emptyText="Eventos aparecerão aqui quando publicados pela administração.">
         <div className="space-y-3">{(events.data ?? []).map((e) => {
-          const item = e as { id: string; title: string; starts_at: string; location: string | null }
-          return <Card key={item.id}><h3 className="font-semibold text-brand-950">{item.title}</h3><p className="text-sm text-slate-600">{new Date(item.starts_at).toLocaleString('pt-BR')} · {item.location ?? 'Local a confirmar'}</p></Card>
+          const item = e as { id: string; title: string; starts_at: string; location: string | null; description: string | null }
+          return (
+            <Card key={item.id}>
+              <h3 className="font-semibold text-brand-950">{item.title}</h3>
+              <p className="mt-1 text-sm text-slate-600">{new Date(item.starts_at).toLocaleString('pt-BR')} · {item.location ?? 'Local a confirmar'}</p>
+              {item.description && <p className="mt-2 text-sm text-slate-500">{item.description}</p>}
+              {isAdmin && <div className="mt-4 flex flex-wrap gap-2">
+                <Button variant="secondary" onClick={() => void generateQr(item.id, item.title)}>Gerar QR</Button>
+                <Button variant="ghost" onClick={() => void loadCheckins(item.id, item.title)}>Ver presenças</Button>
+              </div>}
+            </Card>
+          )
         })}</div>
       </LoadState>
+
+      <Modal open={open} onClose={() => setOpen(false)} title="Novo evento">
+        <form onSubmit={save} className="space-y-4">
+          <TextField label="Título" name="title" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
+          <label className="block text-sm font-medium">Data e hora<input type="datetime-local" value={form.starts_at} onChange={(e) => setForm({ ...form, starts_at: e.target.value })} className="mt-1 min-h-12 w-full rounded-xl border border-slate-200 px-4" /></label>
+          <TextField label="Local" name="location" value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })} />
+          <TextArea label="Descrição" name="description" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
+          <Button type="submit" loading={busy} className="w-full">Salvar</Button>
+        </form>
+      </Modal>
+
+      <Modal open={!!qr} onClose={() => setQr(null)} title="QR Code do evento">
+        <Alert tone="success">Link copiado: {qr?.url}</Alert>
+        <p className="mt-3 text-sm text-slate-600">Compartilhe este link. A presença só é confirmada após o participante validar no servidor.</p>
+      </Modal>
+
+      <Modal open={!!checkins} onClose={() => setCheckins(null)} title={`Presenças — ${checkins?.event ?? ''}`}>
+        {checkins?.rows.length ? <div className="space-y-2">{checkins.rows.map((r, i) => <div key={i} className="flex justify-between text-sm"><span>{r.name}</span><span className="text-slate-500">{new Date(r.at).toLocaleString('pt-BR')}</span></div>)}</div> : <p className="text-sm text-slate-600">Nenhuma presença registrada.</p>}
+      </Modal>
     </>
   )
 }
@@ -398,7 +577,17 @@ export function ProfilePage() {
             <h2 className="font-semibold text-brand-950">Privacidade (LGPD)</h2>
             <p className="mt-1 text-sm text-slate-600">Perfil {profile?.public_profile ? 'público' : 'privado'} · membro desde {profile ? new Date(profile.created_at).toLocaleDateString('pt-BR') : '—'}</p>
             <div className="mt-4 flex flex-wrap gap-2">
-              <Button variant="secondary" onClick={() => notify('Solicitação de exportação registrada.', 'info')}>Exportar meus dados</Button>
+              <Button variant="secondary" loading={busy} onClick={async () => {
+                setBusy(true)
+                try {
+                  const data = await exportMyData()
+                  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
+                  const url = URL.createObjectURL(blob)
+                  const a = document.createElement('a'); a.href = url; a.download = 'meus-dados-jornada.json'; a.click()
+                  URL.revokeObjectURL(url); notify('Exportação concluída.', 'success')
+                } catch (err) { notify(err instanceof Error ? err.message : 'Falha na exportação.', 'error') }
+                finally { setBusy(false) }
+              }}>Exportar meus dados</Button>
               <Button variant="danger" onClick={() => setConfirmDelete(true)}>Solicitar exclusão</Button>
             </div>
           </div>

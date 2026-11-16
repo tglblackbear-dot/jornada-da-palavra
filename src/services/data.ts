@@ -141,3 +141,159 @@ export async function adminStats() {
   if (error) throw error
   return data as Record<string, number>
 }
+
+// -------------------------------------------------------------- notificações
+export interface Notification {
+  id: string
+  kind: string
+  title: string
+  body: string | null
+  read: boolean
+  created_at: string
+}
+
+export async function myNotifications(): Promise<Notification[]> {
+  const { data, error } = await requireSupabase().rpc('my_notifications')
+  if (error) throw error
+  return (data ?? []) as Notification[]
+}
+export async function markNotificationRead(id: string) {
+  const { error } = await requireSupabase().rpc('mark_notification_read', { p_id: id })
+  if (error) throw error
+}
+export async function markAllNotificationsRead() {
+  const { error } = await requireSupabase().rpc('mark_all_notifications_read')
+  if (error) throw error
+}
+export async function exportMyData(): Promise<unknown> {
+  const { data, error } = await requireSupabase().rpc('export_my_data')
+  if (error) throw error
+  return data
+}
+
+// --------------------------------------------------------------- comunidade
+export async function communityHighlights() {
+  const { data, error } = await requireSupabase().from('community_highlights').select('*').limit(10)
+  if (error) throw error
+  return data ?? []
+}
+export async function myMemberships(): Promise<{ groups: string[]; cycles: string[] }> {
+  const { data, error } = await requireSupabase().rpc('my_memberships')
+  if (error) throw error
+  return (data ?? { groups: [], cycles: [] }) as { groups: string[]; cycles: string[] }
+}
+export async function joinGroup(id: string) {
+  const { error } = await requireSupabase().rpc('join_group', { p_group: id })
+  if (error) throw error
+}
+export async function leaveGroup(id: string) {
+  const { error } = await requireSupabase().rpc('leave_group', { p_group: id })
+  if (error) throw error
+}
+export async function joinCycle(id: string) {
+  const { error } = await requireSupabase().rpc('join_cycle', { p_cycle: id })
+  if (error) throw error
+}
+
+// ------------------------------------------------------------------- estudos
+export async function categories() {
+  const { data, error } = await requireSupabase().from('categories').select('id,name').order('name')
+  if (error) throw error
+  return data ?? []
+}
+export async function tracks() {
+  const { data, error } = await requireSupabase().from('study_tracks').select('*').order('title')
+  if (error) throw error
+  return data ?? []
+}
+export async function questionsByTrack(trackId: string): Promise<Question[]> {
+  const { data, error } = await requireSupabase()
+    .from('questions')
+    .select('id,statement,reference,book,chapter,verse,difficulty,category_id,explanation,translation,status,question_options(id,option_text,is_correct,position),study_track_items!inner(track_id)')
+    .eq('study_track_items.track_id', trackId)
+    .eq('status', 'PUBLISHED')
+    .limit(20)
+  if (error) throw error
+  return (data ?? []) as Question[]
+}
+export async function publishedQuestionsFiltered(filters: { categoryId?: string; difficulty?: string; limit?: number }): Promise<Question[]> {
+  let q = requireSupabase()
+    .from('questions')
+    .select('id,statement,reference,book,chapter,verse,difficulty,category_id,explanation,translation,status,question_options(id,option_text,is_correct,position)')
+    .eq('status', 'PUBLISHED')
+    .limit(filters.limit ?? 10)
+  if (filters.categoryId) q = q.eq('category_id', filters.categoryId)
+  if (filters.difficulty) q = q.eq('difficulty', filters.difficulty)
+  const { data, error } = await q
+  if (error) throw error
+  return (data ?? []) as Question[]
+}
+export async function reviewQuestions(): Promise<Question[]> {
+  const { data, error } = await requireSupabase()
+    .from('review_items')
+    .select('question:questions(id,statement,reference,book,chapter,verse,difficulty,category_id,explanation,translation,status,question_options(id,option_text,is_correct,position))')
+    .order('due_at')
+    .limit(15)
+  if (error) throw error
+  return ((data ?? []) as unknown as { question: Question | null }[])
+    .map((r) => r.question)
+    .filter((q): q is Question => !!q)
+}
+export async function reviewItems() {
+  const { data, error } = await requireSupabase().from('review_items').select('*').order('due_at')
+  if (error) throw error
+  return data ?? []
+}
+
+// --------------------------------------------------------------------- admin
+export async function adminSaveQuestion(payload: Record<string, unknown>) {
+  const { error } = await requireSupabase().rpc('admin_save_question', { p: payload })
+  if (error) throw error
+}
+export async function adminSaveEvent(payload: Record<string, unknown>) {
+  const { error } = await requireSupabase().rpc('admin_save_event', { p: payload })
+  if (error) throw error
+}
+export async function adminSaveGroup(payload: Record<string, unknown>) {
+  const { error } = await requireSupabase().rpc('admin_save_group', { p: payload })
+  if (error) throw error
+}
+export async function adminSaveTrack(payload: Record<string, unknown>) {
+  const { error } = await requireSupabase().rpc('admin_save_track', { p: payload })
+  if (error) throw error
+}
+export async function adminSaveDailyWord(payload: Record<string, unknown>) {
+  const { error } = await requireSupabase().rpc('admin_save_daily_word', { p: payload })
+  if (error) throw error
+}
+export async function adminSaveCategory(name: string, description: string) {
+  const { error } = await requireSupabase().rpc('admin_save_category', { p_name: name, p_description: description })
+  if (error) throw error
+}
+export async function adminSetRole(userId: string, role: string, grant: boolean) {
+  const { error } = await requireSupabase().rpc('admin_set_role', { p_user: userId, p_role: role, p_grant: grant })
+  if (error) throw error
+}
+export async function adminSetBlocked(userId: string, blocked: boolean) {
+  const { error } = await requireSupabase().rpc('admin_set_blocked', { p_user: userId, p_blocked: blocked })
+  if (error) throw error
+}
+export async function adminDeleteContent(table: string, id: string) {
+  const { error } = await requireSupabase().rpc('admin_delete_content', { p_table: table, p_id: id })
+  if (error) throw error
+}
+export async function adminReport(kind: string) {
+  const { data, error } = await requireSupabase().rpc('admin_report', { p_kind: kind })
+  if (error) throw error
+  return data as unknown
+}
+export async function createEventCode(eventId: string, hours: number) {
+  const { data, error } = await requireSupabase().rpc('create_event_code', { p_event: eventId, p_hours: hours })
+  if (error) throw error
+  return data as string
+}
+export async function eventCheckins(eventId: string) {
+  const { data, error } = await requireSupabase().rpc('event_checkins', { p_event: eventId })
+  if (error) throw error
+  return (data ?? []) as { user_id: string; name: string; at: string }[]
+}

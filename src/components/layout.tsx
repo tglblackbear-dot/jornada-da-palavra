@@ -1,5 +1,5 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
-import { BookOpen, CalendarDays, Compass, Home, LogOut, Menu, Route, Users, X } from 'lucide-react'
+import { Bell, BookOpen, CalendarDays, Compass, Home, LogOut, Menu, Route, Users, X } from 'lucide-react'
 import { useState, type ReactNode } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { Button } from './ui'
@@ -72,8 +72,11 @@ export function AppLayout() {
       <div className="lg:pl-64">
         <header className="sticky top-0 z-30 flex items-center justify-between border-b border-cream-100 bg-white/95 px-4 py-3 backdrop-blur lg:px-8">
           <button className="rounded-lg p-2 lg:hidden" onClick={() => setOpen(true)} aria-label="Abrir menu"><Menu /></button>
-          <Brand />
-          <Button variant="ghost" onClick={handleLogout} className="hidden sm:inline-flex" aria-label="Sair"><LogOut size={18} /> Sair</Button>
+          <div className="hidden sm:block"><Brand /></div>
+          <div className="flex items-center gap-2">
+            <NavLink to="/notificacoes" aria-label="Notificações" className="rounded-lg p-2 text-brand-900 hover:bg-cream-100"><Bell size={20} /></NavLink>
+            <Button variant="ghost" onClick={handleLogout} className="hidden sm:inline-flex" aria-label="Sair"><LogOut size={18} /> Sair</Button>
+          </div>
         </header>
 
         {open && (
@@ -116,6 +119,10 @@ export function PublicLayout({ children }: { children: ReactNode }) {
       <main>{children}</main>
       <footer className="mx-auto max-w-6xl px-4 py-10 text-center text-xs text-slate-500">
         Jornada da Palavra — Conheça a Palavra. Cresça na fé. Caminhe com a comunidade.
+        <div className="mt-3 flex justify-center gap-4">
+          <NavLink to="/privacidade" className="underline">Privacidade</NavLink>
+          <NavLink to="/termos" className="underline">Termos de Uso</NavLink>
+        </div>
       </footer>
     </div>
   )
