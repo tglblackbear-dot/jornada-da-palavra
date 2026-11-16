@@ -25,6 +25,13 @@ O roteamento usa `BrowserRouter`; refresh em rotas profundas exige fallback para
 
 Somente `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_BASE_PATH` e `VITE_SITE_URL` no frontend. Nunca `SERVICE_ROLE_KEY`.
 
+## Projeto aplicado
+
+- Ref: `pmlsmagwxyfpwnjtgvrv` (região `us-east-1`).
+- `supabase db push --remote --yes` aplicado; seed via `supabase db query --remote --file supabase/seed.sql --yes`.
+- Auth: `site_url` e `uri_allow_list` configurados via Management API; `mailer_autoconfirm = false`.
+- Edge Function `complete-study` deployada com verificação de JWT.
+
 ## Verificação pós-deploy
 
 - Rota `/` carrega; `/login` redireciona corretamente.

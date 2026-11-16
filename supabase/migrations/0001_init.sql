@@ -257,7 +257,7 @@ create table if not exists public.events (
 create table if not exists public.event_codes (
   id uuid primary key default gen_random_uuid(),
   event_id uuid not null references public.events(id) on delete cascade,
-  code text not null unique default encode(gen_random_bytes(9),'hex'),
+  code text not null unique default replace(gen_random_uuid()::text,'-',''),
   expires_at timestamptz,
   active boolean not null default true,
   created_at timestamptz not null default now()
