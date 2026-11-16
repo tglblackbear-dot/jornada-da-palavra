@@ -66,6 +66,7 @@ export function LoginPage() {
 export function RegisterPage() {
   const { configured, signUp } = useAuth()
   const { notify } = useToast()
+  const navigate = useNavigate()
   const [values, setValues] = useState({ name: '', email: '', password: '', confirmPassword: '' })
   const [errors, setErrors] = useState<FieldErrors>({})
   const [busy, setBusy] = useState(false)
@@ -93,7 +94,7 @@ export function RegisterPage() {
       {success ? (
         <div className="space-y-4">
           <Alert tone="success">Cadastro realizado. Enviamos um link de confirmação para o e-mail informado. Abra o link para ativar sua conta.</Alert>
-          <Link to="/login"><Button className="w-full">Ir para Entrar</Button></Link>
+          <Button className="w-full" onClick={() => navigate('/login')}>Ir para Entrar</Button>
         </div>
       ) : (
         <form onSubmit={submit} className="space-y-4" noValidate>

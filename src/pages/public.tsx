@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { BookOpen, HeartHandshake, Route as RouteIcon, ShieldCheck } from 'lucide-react'
 import { PublicLayout } from '../components/layout'
 import { Button, Card } from '../components/ui'
@@ -10,6 +10,7 @@ const PILLARS = [
 ]
 
 export function LandingPage() {
+  const navigate = useNavigate()
   return (
     <PublicLayout>
       <section className="surface-dark relative overflow-hidden">
@@ -24,8 +25,8 @@ export function LandingPage() {
               e viver a comunhão — sem distrações, sem competição vazia.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
-              <Link to="/cadastro"><Button className="bg-gold-500 text-brand-950 hover:bg-gold-600">Começar minha jornada</Button></Link>
-              <Link to="/login"><Button variant="outlineLight">Já tenho conta</Button></Link>
+              <Button onClick={() => navigate('/cadastro')} className="bg-gold-500 text-brand-950 hover:bg-gold-600">Começar minha jornada</Button>
+              <Button variant="outlineLight" onClick={() => navigate('/login')}>Já tenho conta</Button>
             </div>
           </div>
           <div className="relative hidden justify-center lg:flex" aria-hidden>

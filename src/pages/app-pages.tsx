@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react'
-import { Link } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { Alert, Badge, Button, Card, EmptyState, Modal, ProgressBar, SectionHeading, Skeleton, StatCard, TextField, TextArea } from '../components/ui'
 import { useAuth } from '../contexts/AuthContext'
 import { useToast } from '../contexts/ToastContext'
@@ -31,6 +31,7 @@ function LoadState({ loading, error, reload, emptyTitle, emptyText, children, is
 export function DashboardPage() {
   const { user, profile } = useAuth()
   const { notify } = useToast()
+  const navigate = useNavigate()
   const summary = useAsync(() => dashboardSummary(user!.id), [user?.id])
   const word = useAsync(() => dailyWord(), [])
   const first = profile?.display_name?.split(' ')[0] ?? 'irmão'
@@ -70,7 +71,7 @@ export function DashboardPage() {
         )}
       </Card>
       <div className="mb-6">
-        <Link to="/estudar"><Button className="w-full sm:w-auto">Estudar Agora</Button></Link>
+        <Button onClick={() => navigate('/estudar')} className="w-full sm:w-auto">Estudar Agora</Button>
       </div>
       <SectionHeading eyebrow="Resumo" title="Seu progresso" />
       <LoadState loading={summary.loading} error={summary.error} reload={summary.reload}
@@ -185,6 +186,7 @@ export function StudyPage() {
 
 export function JourneyPage() {
   const { user } = useAuth()
+  const navigate = useNavigate()
   const summary = useAsync(() => dashboardSummary(user!.id), [user?.id])
   const days = useAsync(() => listFrom('study_days'), [])
   const streak = currentStreak(((days.data ?? []) as { day: string }[]).map((d) => d.day))
@@ -212,7 +214,7 @@ export function JourneyPage() {
       </div>
       <div className="mt-8">
         <SectionHeading eyebrow="Caderno" title="Revisões pendentes" />
-        <Link to="/caderno-de-estudo"><Button variant="secondary">Abrir meu caderno</Button></Link>
+        <Button variant="secondary" onClick={() => navigate('/caderno-de-estudo')}>Abrir meu caderno</Button>
       </div>
     </>
   )
