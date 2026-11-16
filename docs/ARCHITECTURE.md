@@ -26,8 +26,17 @@ O cliente **nunca** envia pontos, presença, papéis ou status de conteúdo.
 - Sem credenciais, `supabase` é `null` e rotas exibem configuração pendente — não há login falso.
 - PWA usa `vite-plugin-pwa` com atualização automática; nada é creditado offline sem validação posterior.
 
+## Módulos concluídos
+
+- Notificações (RPC + trigger de marcos + central).
+- Comunidade: grupos e ciclos com inscrição via RPC.
+- Eventos: criação admin, geração de código/QR e presença validada no servidor.
+- Admin: CRUD de perguntas, categorias, trilhas, grupos, eventos e Palavra do Dia; papéis, bloqueio, relatórios e auditoria.
+- Estudos: Estudo Livre (filtros), Desafio Bíblico (trilhas) e Revisão espaçada.
+- LGPD: exportação de dados em JSON e solicitação de exclusão; páginas de privacidade e termos.
+
 ## Limitações atuais
 
-- Conteúdo bíblico permanece em `DRAFT` até revisão humana.
-- Web Push, importação/exportação de conteúdo e relatórios avançados estão preparados, mas não implementados.
+- Web Push (notificações do navegador) não implementado.
+- Importação em massa de conteúdo não implementada.
 - Testes E2E dependem de Chromium instalado localmente.

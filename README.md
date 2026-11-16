@@ -6,7 +6,7 @@
 
 Plataforma cristã de estudo bíblico, crescimento espiritual e comunhão. React + TypeScript + Vite + Tailwind + Supabase.
 
-> **Estado atual:** fundação funcional implementada e backend aplicado em produção (Supabase `pmlsmagwxyfpwnjtgvrv`): migrations, seed, RLS, funções, Auth (site URL + redirects) e Edge Function deployados. Conteúdo bíblico permanece em `DRAFT` até revisão humana. Sem credenciais, a UI exibe estado explícito — nada é simulado.
+> **Estado atual:** plataforma funcional em produção. Backend Supabase aplicado (`pmlsmagwxyfpwnjtgvrv`): migrations, seed, RLS, funções, Auth e Edge Function. Inclui autenticação real, perfil com avatar, três modos de estudo, Palavra do Dia, jornada, revisão espaçada, marcos, grupos, ciclos, eventos com QR, notificações, admin com CRUD/relatórios/auditoria, PWA, LGPD (exportação/exclusão) e páginas legais. Sem credenciais, a UI exibe estado explícito — nada é simulado.
 
 ## Executar
 
