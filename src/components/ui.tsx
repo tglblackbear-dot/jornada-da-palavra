@@ -1,7 +1,7 @@
 import { X } from 'lucide-react'
 import type { ButtonHTMLAttributes, InputHTMLAttributes, ReactNode, TextareaHTMLAttributes } from 'react'
 
-type Variant = 'primary' | 'secondary' | 'ghost' | 'danger'
+type Variant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'outlineLight'
 
 export function Button({ variant = 'primary', loading, className = '', children, disabled, ...props }: ButtonHTMLAttributes<HTMLButtonElement> & { variant?: Variant; loading?: boolean }) {
   const styles: Record<Variant, string> = {
@@ -9,6 +9,7 @@ export function Button({ variant = 'primary', loading, className = '', children,
     secondary: 'bg-white text-brand-900 border border-brand-100 hover:bg-cream-50',
     ghost: 'bg-transparent text-brand-900 hover:bg-cream-100',
     danger: 'bg-red-700 text-white hover:bg-red-800',
+    outlineLight: 'border border-white/40 bg-transparent text-white hover:bg-white/10',
   }
   return (
     <button

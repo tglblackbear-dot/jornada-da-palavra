@@ -25,7 +25,7 @@ export function LandingPage() {
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Link to="/cadastro"><Button className="bg-gold-500 text-brand-950 hover:bg-gold-600">Começar minha jornada</Button></Link>
-              <Link to="/login"><Button variant="secondary" className="border-white/30 bg-transparent text-white hover:bg-white/10">Já tenho conta</Button></Link>
+              <Link to="/login"><Button variant="outlineLight">Já tenho conta</Button></Link>
             </div>
           </div>
           <div className="relative hidden justify-center lg:flex" aria-hidden>
