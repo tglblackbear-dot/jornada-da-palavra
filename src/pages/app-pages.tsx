@@ -31,7 +31,6 @@ function LoadState({ loading, error, reload, emptyTitle, emptyText, children, is
 export function DashboardPage() {
   const { user, profile } = useAuth()
   const { notify } = useToast()
-  const navigate = useNavigate()
   const summary = useAsync(() => dashboardSummary(user!.id), [user?.id])
   const word = useAsync(() => dailyWord(), [])
   const first = profile?.display_name?.split(' ')[0] ?? 'irmão'
