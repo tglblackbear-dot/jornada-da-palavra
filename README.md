@@ -1,5 +1,7 @@
 # Jornada da Palavra
 
+**Produção:** https://tglblackbear-dot.github.io/jornada-da-palavra/ · Repositório público (Pages em plano free).
+
 **PALAVRA • CRESCIMENTO • COMUNHÃO** — Conheça a Palavra. Cresça na fé. Caminhe com a comunidade.
 
 Plataforma cristã de estudo bíblico, crescimento espiritual e comunhão. React + TypeScript + Vite + Tailwind + Supabase.
